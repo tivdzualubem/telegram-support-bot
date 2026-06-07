@@ -36,6 +36,31 @@ if not BOT_TOKEN:
 
 TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
+def configure_webhook():
+    if not WEBHOOK_URL:
+        logger.warning("WEBHOOK_URL is not set. Webhook was not configured.")
+        return
+
+    webhook_url = f"{WEBHOOK_URL.rstrip('/')}/webhook"
+
+    try:
+        response = requests.post(
+            f"{TELEGRAM_API}/setWebhook",
+            json={
+                "url": webhook_url,
+                "drop_pending_updates": False,
+            },
+            timeout=10,
+        )
+
+        if response.ok:
+            logger.info("Webhook configured successfully: %s", webhook_url)
+        else:
+            logger.error("Failed to configure webhook: %s", response.text)
+
+    except requests.RequestException as exc:
+        logger.exception("Webhook configuration failed: %s", exc)
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -500,6 +525,8 @@ def webhook():
     except Exception as exc:
         logger.exception("Webhook processing failed: %s", exc)
         return jsonify({"ok": False, "error": str(exc)}), 500
+
+configure_webhook()
 
 
 if __name__ == "__main__":
